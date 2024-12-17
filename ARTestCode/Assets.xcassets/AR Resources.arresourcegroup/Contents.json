@@ -5,10 +5,19 @@
   },
   "resources" : [
     {
-      "filename" : "bottleScanTest.arobject"
+      "filename" : "0.arobject"
     },
     {
-      "filename" : "diary.arobject"
+      "filename" : "1.arobject"
+    },
+    {
+      "filename" : "2.arobject"
+    },
+    {
+      "filename" : "3.arobject"
+    },
+    {
+      "filename" : "City.arobject"
     }
   ]
 }

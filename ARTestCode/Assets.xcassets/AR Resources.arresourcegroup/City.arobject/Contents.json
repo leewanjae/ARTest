@@ -1,0 +1,22 @@
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  },
+  "properties" : {
+    "content" : "trackingData.cv3dmap",
+    "preview" : "preview.jpg",
+    "rotation" : [
+      0,
+      1,
+      0,
+      -1.6015893220901489
+    ],
+    "translation" : [
+      0.0093059837818145752,
+      0.34511107206344604,
+      -0.041355699300765991
+    ],
+    "version" : 1
+  }
+}
