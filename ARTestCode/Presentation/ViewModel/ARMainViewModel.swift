@@ -58,7 +58,7 @@ final class ARMainViewModel {
         }
         processedRenderedObjects.insert(objectName)
         
-        let arObjectAnchor = AnchorEntity(anchor: objectAnchor)
+        let arObjectAnchor = AnchorEntity(world: objectAnchor.transform)
         
         guard let city = load3DModel(source: "City") else { return print("City 모델이 없습니다.")}
         guard let car = load3DModel(source: "Car") else { return print("Car 모델이 없습니다.") }
@@ -68,14 +68,11 @@ final class ARMainViewModel {
         
         car.position = SIMD3(city.position.x - 150, city.position.y + 30, city.position.z)
         car.scale = SIMD3(0.5, 0.5, 0.5)
-        car.generateCollisionShapes(recursive: true)
 
         city.addChild(car)
         arObjectAnchor.addChild(city)
         
         arView.installGestures([.all], for: city)
-        arView.installGestures([.all], for: car)
-
         arView.scene.addAnchor(arObjectAnchor)
     }
     
