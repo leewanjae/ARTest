@@ -58,10 +58,13 @@ final class ARMainViewModel {
         }
         processedRenderedObjects.insert(objectName)
         
-        let arObjectAnchor = AnchorEntity(world: objectAnchor.transform)
         guard let city = load3DModel(source: "City") else { return print("City 모델이 없습니다.")}
         guard let car = load3DModel(source: "Car") else { return print("Car 모델이 없습니다.") }
+        guard let bee = load3DModel(source: "Bee") else { return print("Bee 모델이 없습니다.")}
+           
+        playAnimations(model: bee)
         
+        let arObjectAnchor = AnchorEntity(world: objectAnchor.transform)
         let anchorExtent = objectAnchor.referenceObject.extent // 앵커 실제 scale 값
         print("앵커의 실제 크기: \(anchorExtent)")
 
@@ -78,7 +81,11 @@ final class ARMainViewModel {
         car.scale = SIMD3(0.2, 0.2, 0.2)
         car.position = SIMD3(city.position.x - 150, city.position.y, city.position.z)
 
+        bee.scale = SIMD3(0.2, 0.2, 0.2)
+        bee.position = SIMD3(car.position.x, car.position.y + 30, car.position.z)
+
         city.addChild(car)
+        city.addChild(bee)
         arObjectAnchor.addChild(city)
         
         arView.installGestures([.all], for: city)
@@ -92,6 +99,19 @@ final class ARMainViewModel {
         } catch {
             print("\(source) 불러오기 실패")
             return nil
+        }
+    }
+    
+    private func playAnimations(model: ModelEntity) {
+        let animations = model.availableAnimations
+        
+        guard !animations.isEmpty else {
+            print("모델에 애니메이션이 없습니다.")
+            return
+        }
+        
+        for animation in animations {
+            model.playAnimation(animation.repeat(duration: .infinity), transitionDuration: 0.3)
         }
     }
 }

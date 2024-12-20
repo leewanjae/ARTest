@@ -8,6 +8,7 @@
 import ARKit
 import RealityKit
 import UIKit
+import SnapKit
 
 final class ARMainViewController: UIViewController {
     // MARK: - Properties
@@ -62,15 +63,15 @@ final class ARMainViewController: UIViewController {
     }
     
     private func setAutoLayout() {
-        let safeArea = view.safeAreaLayoutGuide
+        referenceARObjectName.snp.makeConstraints {
+            $0.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(10)
+            $0.leading.equalTo(view.snp.leading).offset(10)
+        }
         
-        NSLayoutConstraint.activate([
-            referenceARObjectName.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 10),
-            referenceARObjectName.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            
-            restartButton.topAnchor.constraint(equalTo: referenceARObjectName.bottomAnchor, constant: 10),
-            restartButton.leadingAnchor.constraint(equalTo: referenceARObjectName.leadingAnchor)
-        ])
+        restartButton.snp.makeConstraints {
+            $0.top.equalTo(referenceARObjectName.snp.bottom).offset(10)
+            $0.leading.equalTo(referenceARObjectName.snp.leading)
+        }
     }
     
     @objc private func restartARSession() {
