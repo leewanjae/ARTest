@@ -59,15 +59,24 @@ final class ARMainViewModel {
         processedRenderedObjects.insert(objectName)
         
         let arObjectAnchor = AnchorEntity(world: objectAnchor.transform)
-        
         guard let city = load3DModel(source: "City") else { return print("City 모델이 없습니다.")}
         guard let car = load3DModel(source: "Car") else { return print("Car 모델이 없습니다.") }
+        
+        let anchorExtent = objectAnchor.referenceObject.extent // 앵커 실제 scale 값
+        print("앵커의 실제 크기: \(anchorExtent)")
+
+        let anchorPosition = SIMD3( // 앵커의 실제 위치
+            objectAnchor.transform.columns.3.x,
+            objectAnchor.transform.columns.3.y,
+            objectAnchor.transform.columns.3.z
+        )
+        print("실제 앵커의 위치: \(anchorPosition)")
         
         city.position = SIMD3(0, 0, 0)
         city.generateCollisionShapes(recursive: true)
         
-        car.position = SIMD3(city.position.x - 150, city.position.y + 30, city.position.z)
-        car.scale = SIMD3(0.5, 0.5, 0.5)
+        car.scale = SIMD3(0.2, 0.2, 0.2)
+        car.position = SIMD3(city.position.x - 150, city.position.y, city.position.z)
 
         city.addChild(car)
         arObjectAnchor.addChild(city)
