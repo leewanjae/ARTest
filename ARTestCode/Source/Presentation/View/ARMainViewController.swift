@@ -12,18 +12,18 @@ import SnapKit
 
 final class ARMainViewController: UIViewController {
     // MARK: - Properties
-    var referenceARObjectName: UILabel
-    var restartButton: UIButton
-    var arView: ARView
+    private var arView = ARView()
+    private var referenceARObjectName = UILabel()
+    private var restartButton = UIButton()
+    private var loadingView = UIView()
+    private var loadingLabel = UILabel()
+    private var loadingImage = UIImageView()
+    private var addModelButton = UIButton()
     
-    private var viewModel: ARMainViewModel
+    private var viewModel = ARMainViewModel()
     
     // MARK: - Initialize
     init() {
-        self.referenceARObjectName = UILabel()
-        self.restartButton = UIButton()
-        self.arView = ARView(frame: .zero)
-        self.viewModel = ARMainViewModel()
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -43,9 +43,14 @@ final class ARMainViewController: UIViewController {
     
     // MARK: - UI
     private func addView() {
+        loadingView.addSubview(loadingLabel)
+        loadingView.addSubview(loadingImage)
+        
         view.addSubview(arView)
         view.addSubview(referenceARObjectName)
         view.addSubview(restartButton)
+        view.addSubview(addModelButton)
+        view.addSubview(loadingView)
     }
     
     private func setUI() {
@@ -60,6 +65,26 @@ final class ARMainViewController: UIViewController {
         restartButton.setTitleColor(.white, for: .normal)
         restartButton.translatesAutoresizingMaskIntoConstraints = false
         restartButton.addTarget(self, action: #selector(restartARSession), for: .touchUpInside)
+        
+        addModelButton.setTitle("🐝", for: .normal)
+        addModelButton.backgroundColor = .white
+        addModelButton.layer.shadowColor = UIColor.black.cgColor
+        addModelButton.layer.shadowRadius = 5
+        addModelButton.layer.shadowOpacity = 0.5
+        addModelButton.layer.cornerRadius = 10
+        addModelButton.addTarget(self, action: #selector(addBeeButtonTapped), for: .touchUpInside)
+        
+        loadingView.backgroundColor = .black
+        loadingView.frame = view.bounds
+        
+        loadingLabel.text = " Park\n\nApple Park is the new home for 12,000 Apple employees.\nit is designed to combine an ideal working environment with \nthe natural beauty of the California native landscape."
+        loadingLabel.numberOfLines = 0
+        loadingLabel.textAlignment = .center
+        loadingLabel.textColor = .white
+        loadingLabel.font = .systemFont(ofSize: 10, weight: .bold)
+        
+        loadingImage.image = .appleLogo
+        loadingImage.contentMode = .scaleAspectFit
     }
     
     private func setAutoLayout() {
@@ -72,16 +97,49 @@ final class ARMainViewController: UIViewController {
             $0.top.equalTo(referenceARObjectName.snp.bottom).offset(10)
             $0.leading.equalTo(referenceARObjectName.snp.leading)
         }
+        
+        loadingView.snp.makeConstraints {
+            $0.leading.trailing.top.bottom.equalToSuperview()
+        }
+        
+        loadingImage.snp.makeConstraints {
+            $0.centerX.centerY.equalToSuperview()
+            $0.width.height.equalTo(150)
+        }
+        
+        loadingLabel.snp.makeConstraints {
+            $0.top.equalTo(loadingImage.snp.bottom).offset(20)
+            $0.centerX.equalToSuperview()
+            $0.leading.trailing.equalToSuperview()
+        }
+        
+        addModelButton.snp.makeConstraints {
+            $0.centerY.equalToSuperview()
+            $0.trailing.equalTo(view.snp.trailing).offset(-10)
+            $0.width.height.equalTo(30)
+        }
     }
     
     @objc private func restartARSession() {
         viewModel.restartARSession(for: arView)
         referenceARObjectName.text = "Loading..."
     }
+    
+    @objc private func addBeeButtonTapped() {
+        viewModel.addBeeModel(arView: arView)
+    }
 }
 
 // MARK: Delegate
 extension ARMainViewController: ARSessionDelegate {
+    func session(_ session: ARSession, didUpdate frame: ARFrame) {
+        if frame.camera.trackingState == .normal {
+            DispatchQueue.main.async {
+                self.loadingView.removeFromSuperview()
+            }
+        }
+    }
+    
     func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
         for anchor in anchors {
             if let objectAnchor = anchor as? ARObjectAnchor {
@@ -98,7 +156,7 @@ extension ARMainViewController: ARSessionDelegate {
                 
                 referenceARObjectName.text = "object: \(objectAnchor.referenceObject.name ?? "N/A"), x: \(xFormatted), y: \(yFormatted), z: \(zFormatted)"
                 
-                viewModel.addARContent(objectAnchor: objectAnchor, arView: arView)
+                viewModel.addARCityObjectWithCar(objectAnchor: objectAnchor, arView: arView)
             }
         }
     }
