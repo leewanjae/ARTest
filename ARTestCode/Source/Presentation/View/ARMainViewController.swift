@@ -8,6 +8,7 @@
 import ARKit
 import RealityKit
 import UIKit
+
 import SnapKit
 
 final class ARMainViewController: UIViewController {
@@ -19,6 +20,7 @@ final class ARMainViewController: UIViewController {
     private var loadingLabel = UILabel()
     private var loadingImage = UIImageView()
     private var addModelButton = UIButton()
+    private var lightButton = UIButton()
     
     private var viewModel = ARMainViewModel()
     
@@ -39,6 +41,7 @@ final class ARMainViewController: UIViewController {
         setAutoLayout()
         arView.session.delegate = self
         viewModel.setupARSession(arView: arView)
+        addGesture()
     }
     
     // MARK: - UI
@@ -50,6 +53,7 @@ final class ARMainViewController: UIViewController {
         view.addSubview(referenceARObjectName)
         view.addSubview(restartButton)
         view.addSubview(addModelButton)
+        view.addSubview(lightButton)
         view.addSubview(loadingView)
     }
     
@@ -58,12 +62,14 @@ final class ARMainViewController: UIViewController {
         
         referenceARObjectName.font = UIFont.systemFont(ofSize: 20, weight: .bold)
         referenceARObjectName.textColor = .white
-        referenceARObjectName.translatesAutoresizingMaskIntoConstraints = false
         referenceARObjectName.text = "Loading..."
         
-        restartButton.setTitle("restart", for: .normal)
-        restartButton.setTitleColor(.white, for: .normal)
-        restartButton.translatesAutoresizingMaskIntoConstraints = false
+        restartButton.setImage(UIImage(systemName: "trash"), for: .normal)
+        restartButton.tintColor = .black
+        restartButton.backgroundColor = .white
+        restartButton.layer.shadowRadius = 5
+        restartButton.layer.shadowOpacity = 0.5
+        restartButton.layer.cornerRadius = 10
         restartButton.addTarget(self, action: #selector(restartARSession), for: .touchUpInside)
         
         addModelButton.setTitle("🐝", for: .normal)
@@ -73,6 +79,14 @@ final class ARMainViewController: UIViewController {
         addModelButton.layer.shadowOpacity = 0.5
         addModelButton.layer.cornerRadius = 10
         addModelButton.addTarget(self, action: #selector(addBeeButtonTapped), for: .touchUpInside)
+        
+        lightButton.backgroundColor = .white
+        lightButton.layer.shadowColor = UIColor.black.cgColor
+        lightButton.layer.shadowRadius = 5
+        lightButton.layer.shadowOpacity = 0.5
+        lightButton.layer.cornerRadius = 10
+        lightButton.setTitle(("☀️"), for: .normal)
+        lightButton.addTarget(self, action: #selector(lightChange), for: .touchUpInside)
         
         loadingView.backgroundColor = .black
         loadingView.frame = view.bounds
@@ -96,6 +110,7 @@ final class ARMainViewController: UIViewController {
         restartButton.snp.makeConstraints {
             $0.top.equalTo(referenceARObjectName.snp.bottom).offset(10)
             $0.leading.equalTo(referenceARObjectName.snp.leading)
+            $0.width.height.equalTo(30)
         }
         
         loadingView.snp.makeConstraints {
@@ -118,8 +133,29 @@ final class ARMainViewController: UIViewController {
             $0.trailing.equalTo(view.snp.trailing).offset(-10)
             $0.width.height.equalTo(30)
         }
+        
+        lightButton.snp.makeConstraints {
+            $0.top.equalTo(addModelButton.snp.bottom).offset(10)
+            $0.trailing.equalTo(addModelButton.snp.trailing)
+            $0.width.height.equalTo(30)
+        }
     }
     
+    private func addGesture() {
+        let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(deleteBeeModelTapped(gesture:)))
+        doubleTapGesture.numberOfTapsRequired = 2
+        
+        let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(gesture:)))
+        
+        let swipeUpGesture = UISwipeGestureRecognizer(target: self, action: #selector(upSwipeGesture(gesture:)))
+        swipeUpGesture.direction = .up
+        
+        arView.addGestureRecognizer(longPressGesture)
+        arView.addGestureRecognizer(doubleTapGesture)
+        arView.addGestureRecognizer(swipeUpGesture)
+    }
+    
+    // MARK: @objc
     @objc private func restartARSession() {
         viewModel.restartARSession(for: arView)
         referenceARObjectName.text = "Loading..."
@@ -127,6 +163,23 @@ final class ARMainViewController: UIViewController {
     
     @objc private func addBeeButtonTapped() {
         viewModel.addBeeModel(arView: arView)
+    }
+    
+    @objc private func deleteBeeModelTapped(gesture: UITapGestureRecognizer) {
+        viewModel.deleteModel(arView: arView, model: "Bee")
+    }
+    
+    @objc private func handleLongPress(gesture: UITapGestureRecognizer) {
+        viewModel.toggleBeeAnimation(arView: arView)
+    }
+    
+    @objc private func upSwipeGesture(gesture: UITapGestureRecognizer) {
+    }
+    
+    @objc private func lightChange() {
+        if let isDay = viewModel.toggleLightMode(arView: arView) {
+            lightButton.setTitle("\(isDay ? "☀️" : "🌙")", for: .normal)
+        }
     }
 }
 
@@ -143,20 +196,19 @@ extension ARMainViewController: ARSessionDelegate {
     func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
         for anchor in anchors {
             if let objectAnchor = anchor as? ARObjectAnchor {
-                guard let objectName = objectAnchor.referenceObject.name, objectName == "4" else {
+                guard let objectName = objectAnchor.referenceObject.name, objectName == "ScanReferenceObj" else {
                     print("필터링: \(objectAnchor.referenceObject.name ?? "알 수 없음")는 처리되지 않습니다.")
                     continue
                 }
                 
                 let position = objectAnchor.transform.columns.3
-                
                 let xFormatted = String(format: "%.2f", position.x)
                 let yFormatted = String(format: "%.2f", position.y)
                 let zFormatted = String(format: "%.2f", position.z)
                 
                 referenceARObjectName.text = "object: \(objectAnchor.referenceObject.name ?? "N/A"), x: \(xFormatted), y: \(yFormatted), z: \(zFormatted)"
                 
-                viewModel.addARCityObjectWithCar(objectAnchor: objectAnchor, arView: arView)
+                viewModel.addReferenceObjectOnApplePark(objectAnchor: objectAnchor, arView: arView)
             }
         }
     }

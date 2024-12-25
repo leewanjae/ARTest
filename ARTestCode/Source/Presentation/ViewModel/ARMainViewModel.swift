@@ -12,10 +12,12 @@ final class ARMainViewModel {
     // MARK: - Properties
     private var processedAnchors = Set<UUID>()
     private var processedRenderedObjects = Set<String>()
+    private var isDay = true
     
     // MARK: - AR
     func setupARSession(arView: ARView) {
         let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = .horizontal
         
         if let referenceObjects = ARReferenceObject.referenceObjects(inGroupNamed: "AR Resources", bundle: nil) {
             configuration.detectionObjects = referenceObjects
@@ -26,6 +28,7 @@ final class ARMainViewModel {
     
     func restartARSession(for arView: ARView) {
         let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = .horizontal
         
         if let referenceObjects = ARReferenceObject.referenceObjects(inGroupNamed: "AR Resources", bundle: nil) {
             configuration.detectionObjects = referenceObjects
@@ -40,7 +43,8 @@ final class ARMainViewModel {
         print("AR 세션 재시작")
     }
     
-    func addARCityObjectWithCar(objectAnchor: ARObjectAnchor, arView: ARView) {
+    // MARK: - 3D Model
+    func addReferenceObjectOnApplePark(objectAnchor: ARObjectAnchor, arView: ARView) {
         guard !processedAnchors.contains(objectAnchor.identifier) else {
             print("Anchor ID \(objectAnchor.identifier) 이미 처리되었습니다. 렌더링을 건너뜁니다.")
             return
@@ -58,53 +62,44 @@ final class ARMainViewModel {
         }
         processedRenderedObjects.insert(objectName)
         
-        guard let city = load3DModel(source: "City") else { return print("City 모델이 없습니다.")}
-        guard let car = load3DModel(source: "Car") else { return print("Car 모델이 없습니다.") }
-        guard let bee = load3DModel(source: "Bee") else { return print("Bee 모델이 없습니다.")}
-        
-        playAnimations(model: bee)
+        guard let applePark = load3DModel(source: "APPLE_PARK") else { return print("APPLE_PARK 모델이 없습니다.")}
         
         let arObjectAnchor = AnchorEntity(world: objectAnchor.transform)
+        let center = objectAnchor.referenceObject.center
+        let extent = objectAnchor.referenceObject.extent
         
-        //        앵커 실제 scale 값
-        //        let anchorExtent = objectAnchor.referenceObject.extent
-        //        print("앵커의 실제 크기: \(anchorExtent)")
+        applePark.name = "APPLE_PARK"
+        applePark.position = center
+        print("원래 applePark의 position- x:\(applePark.position.x), y:\(applePark.position.y), z:\(applePark.position.z)")
+        applePark.position = SIMD3(
+            center.x,
+            center.y - extent.y / 2,
+            center.z
+        )
+        applePark.generateCollisionShapes(recursive: true)
+        print("applePark의 position- x:\(applePark.position.x), y:\(applePark.position.y), z:\(applePark.position.z)")
         
-        //        앵커의 실제 위치
-        //        let anchorPosition = SIMD3(
-        //            objectAnchor.transform.columns.3.x,
-        //            objectAnchor.transform.columns.3.y,
-        //            objectAnchor.transform.columns.3.z
-        //        )
+        arObjectAnchor.addChild(applePark)
         
-        city.name = "City"
-        city.position = SIMD3(0, 0, 0)
-        city.generateCollisionShapes(recursive: true)
+        visualizeBoundingBox(objectAnchor: objectAnchor, arView: arView)
         
-        car.name = "Car"
-        car.scale = SIMD3(0.2, 0.2, 0.2)
-        car.position = SIMD3(city.position.x - 150, city.position.y, city.position.z)
-        
-        city.addChild(car)
-        arObjectAnchor.addChild(city)
-        
-        arView.installGestures([.all], for: city)
+        arView.installGestures([.scale], for: applePark)
         arView.scene.addAnchor(arObjectAnchor)
+        
+        self.setupDayLight(arView: arView)
     }
     
     func addBeeModel(arView: ARView) {
-        guard let city = arView.scene.findEntity(named: "City") as? ModelEntity else { return print("City 모델을 찾을 수 없습니다.") }
-        guard let car = arView.scene.findEntity(named: "Car") as? ModelEntity else { return print("Car 모델을 찾을 수 없습니다.") }
+        guard let applePark = arView.scene.findEntity(named: "APPLE_PARK") as? ModelEntity else { return print("APPLE_PARK 모델을 찾을 수 없습니다.") }
         
-        if let existingBee = city.findEntity(named: "Bee") { return print("이미 Bee 모델이 추가되었습니다: \(existingBee.name)") }
+        if let existingBee = applePark.findEntity(named: "Bee") { return print("이미 Bee 모델이 추가되었습니다: \(existingBee.name)") }
         guard let bee = load3DModel(source: "Bee") else { return print("Bee 모델이 없습니다.") }
         
         bee.name = "Bee"
-        bee.scale = SIMD3(0.2, 0.2, 0.2)
-        bee.position = SIMD3(car.position.x, car.position.y + 30, car.position.z)
-        playAnimations(model: bee)
+        bee.scale = SIMD3(0.001, 0.001, 0.001)
+        bee.position = SIMD3(applePark.position.x, applePark.position.y + 1, applePark.position.z)
         
-        city.addChild(bee)
+        applePark.addChild(bee)
     }
     
     private func load3DModel(source: String) -> ModelEntity? {
@@ -117,7 +112,17 @@ final class ARMainViewModel {
         }
     }
     
-    private func playAnimations(model: ModelEntity) {
+    func deleteModel(arView: ARView, model: String) {
+        if let entity = arView.scene.findEntity(named: model) as? ModelEntity {
+            entity.removeFromParent()
+            print("\(model) 모델 삭제 완료.")
+        } else {
+            print("\(model) 모델이 없습니다.")
+        }
+    }
+    
+    // MARK: - Animation
+    func playAnimations(model: ModelEntity) {
         let animations = model.availableAnimations
         
         guard !animations.isEmpty else {
@@ -128,5 +133,79 @@ final class ARMainViewModel {
         for animation in animations {
             model.playAnimation(animation.repeat(duration: .infinity), transitionDuration: 0.3)
         }
+    }
+    
+    func toggleBeeAnimation(arView: ARView) {
+        guard let applePark = arView.scene.findEntity(named: "APPLE_PARK") as? ModelEntity else { return print("APPLE_PARK 모델을 찾을 수 없습니다.") }
+        guard let bee = applePark.findEntity(named: "Bee") else { return }
+        
+        playAnimations(model: bee as! ModelEntity)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 9) {
+            bee.stopAllAnimations()
+        }
+    }
+    
+    // MARK: - Light
+    func toggleLightMode(arView: ARView) -> Bool? {
+        guard arView.scene.findEntity(named: "APPLE_PARK") != nil else { return nil }
+        
+        removeAllLights(arView: arView)
+        
+        if isDay {
+            self.setupNightLight(arView: arView)
+        } else {
+            self.setupDayLight(arView: arView)
+        }
+        
+        isDay.toggle()
+        return isDay
+    }
+    
+    private func setupDayLight(arView: ARView) {
+        let lightEntity = Entity()
+        var sunLight = DirectionalLightComponent()
+        sunLight.color = .white
+        sunLight.intensity = 5000
+        sunLight.isRealWorldProxy = false
+        
+        lightEntity.components[DirectionalLightComponent.self] = sunLight
+        arView.scene.anchors.first?.addChild(lightEntity)
+    }
+    
+    private func setupNightLight(arView: ARView) {
+        let lightEntity = Entity()
+        var moonLight = DirectionalLightComponent()
+        
+        moonLight.color = .gray
+        moonLight.intensity = 50
+        moonLight.isRealWorldProxy = false
+        
+        lightEntity.components[DirectionalLightComponent.self] = moonLight
+        arView.scene.anchors.first?.addChild(lightEntity)
+    }
+    
+    private func removeAllLights(arView: ARView) {
+        let lights = arView.scene.anchors.flatMap { $0.children }.filter { $0.components[DirectionalLightComponent.self] != nil }
+        for light in lights {
+            light.removeFromParent()
+        }
+    }
+    
+    // MARK: - Debug
+    func visualizeBoundingBox(objectAnchor: ARObjectAnchor, arView: ARView) {
+        let extent = objectAnchor.referenceObject.extent
+        
+        let box = MeshResource.generateBox(size: extent)
+        let material = SimpleMaterial(color: .red.withAlphaComponent(0.5), isMetallic: false)
+        let boxEntity = ModelEntity(mesh: box, materials: [material])
+        
+        boxEntity.position = SIMD3(0, 0, 0)
+        
+        let anchorEntity = AnchorEntity(world: objectAnchor.transform)
+        anchorEntity.addChild(boxEntity)
+        arView.scene.addAnchor(anchorEntity)
+        
+        print("Extent (Bounding Box 크기): \(extent)")
     }
 }

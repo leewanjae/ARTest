@@ -5,22 +5,13 @@
   },
   "resources" : [
     {
-      "filename" : "0.arobject"
-    },
-    {
-      "filename" : "1.arobject"
-    },
-    {
-      "filename" : "2.arobject"
-    },
-    {
-      "filename" : "3.arobject"
-    },
-    {
       "filename" : "4.arobject"
     },
     {
       "filename" : "Anchor.arobject"
+    },
+    {
+      "filename" : "ScanReferenceObj.arobject"
     }
   ]
 }
