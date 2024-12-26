@@ -192,6 +192,94 @@ final class ARMainViewModel {
         }
     }
     
+    // MARK: - Hireki
+    func moveRoofInstance(arView: ARView) {
+        guard let applePark = arView.scene.findEntity(named: "APPLE_PARK") as? ModelEntity else {
+            print("APPLE_PARK 모델을 찾을 수 없습니다.")
+            return
+        }
+        
+        guard let modelComponent = applePark.model else {
+            print("모델 컴포넌트를 찾을 수 없습니다.")
+            return
+        }
+        
+        let mesh = modelComponent.mesh
+        
+        var materials = modelComponent.materials
+        if materials.indices.contains(0) {
+            materials[0] = SimpleMaterial(color: .red, isMetallic: false)
+            applePark.model?.materials = materials
+        }
+        
+        guard var meshModel = mesh.contents.models.first(where: { $0.id == "Object_0"}) else {
+            print("모델 찾을 수 없습니다.")
+            return
+        }
+        
+        guard var meshInstance = mesh.contents.instances.first(where: { $0.id == "Object_0-0" }) else {
+            print("인스턴스를 찾을 수 없습니다.")
+            return
+        }
+    }
+    
+    func upWithPhysics(arView: ARView) {
+        guard let applePark = arView.scene.findEntity(named: "APPLE_PARK") as? ModelEntity else {
+            print("APPLE_PARK 모델을 찾을 수 없습니다.")
+            return
+        }
+        
+        applePark.physicsBody = PhysicsBodyComponent(
+            massProperties: .default,
+            material: .default,
+            mode: .kinematic
+        )
+        
+        applePark.components.set(
+            PhysicsMotionComponent(
+                linearVelocity: SIMD3<Float>(0, 0.5, 0),
+                angularVelocity: .zero
+            )
+        )
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            applePark.components.set(
+                PhysicsMotionComponent(
+                    linearVelocity: .zero,
+                    angularVelocity: .zero
+                )
+            )
+        }
+    }
+    
+    func downWithPhysics(arView: ARView) {
+        guard let applePark = arView.scene.findEntity(named: "APPLE_PARK") as? ModelEntity else {
+            print("APPLE_PARK 모델을 찾을 수 없습니다.")
+            return
+        }
+        
+        applePark.physicsBody = PhysicsBodyComponent(
+            massProperties: .default,
+            material: .default,
+            mode: .kinematic
+        )
+        applePark.components.set(
+            PhysicsMotionComponent(
+                linearVelocity: SIMD3<Float>(0, -0.5, 0),
+                angularVelocity: .zero
+            )
+        )
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            applePark.components.set(
+                PhysicsMotionComponent(
+                    linearVelocity: .zero,
+                    angularVelocity: .zero
+                )
+            )
+        }
+    }
+    
     // MARK: - Debug
     func visualizeBoundingBox(objectAnchor: ARObjectAnchor, arView: ARView) {
         let extent = objectAnchor.referenceObject.extent
@@ -207,5 +295,22 @@ final class ARMainViewModel {
         arView.scene.addAnchor(anchorEntity)
         
         print("Extent (Bounding Box 크기): \(extent)")
+    }
+    
+    func printMeshInfo(arView: ARView) {
+        guard let applePark = arView.scene.findEntity(named: "APPLE_PARK") as? ModelEntity else {
+            print("APPLE_PARK 모델을 찾을 수 없습니다.")
+            return
+        }
+        
+        guard let mesh = applePark.model?.mesh else {
+            print("메쉬 정보가 없습니다.")
+            return
+        }
+        
+        print("instances ***************")
+        mesh.contents.instances.forEach { print("instances: \($0)") }
+        print("models ***************")
+        mesh.contents.models.forEach { print("models: \($0)") }
     }
 }

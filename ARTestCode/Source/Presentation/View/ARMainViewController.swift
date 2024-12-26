@@ -150,9 +150,13 @@ final class ARMainViewController: UIViewController {
         let swipeUpGesture = UISwipeGestureRecognizer(target: self, action: #selector(upSwipeGesture(gesture:)))
         swipeUpGesture.direction = .up
         
+        let swipeDownGesture = UISwipeGestureRecognizer(target: self, action: #selector(downSwipeGesture(gesture:)))
+        swipeDownGesture.direction = .down
+
         arView.addGestureRecognizer(longPressGesture)
         arView.addGestureRecognizer(doubleTapGesture)
         arView.addGestureRecognizer(swipeUpGesture)
+        arView.addGestureRecognizer(swipeDownGesture)
     }
     
     // MARK: @objc
@@ -174,12 +178,20 @@ final class ARMainViewController: UIViewController {
     }
     
     @objc private func upSwipeGesture(gesture: UITapGestureRecognizer) {
+        viewModel.upWithPhysics(arView: arView)
+        print("up")
+    }
+    
+    @objc private func downSwipeGesture(gesture: UITapGestureRecognizer) {
+        viewModel.downWithPhysics(arView: arView)
+        print("down")
     }
     
     @objc private func lightChange() {
         if let isDay = viewModel.toggleLightMode(arView: arView) {
             lightButton.setTitle("\(isDay ? "☀️" : "🌙")", for: .normal)
         }
+        viewModel.printMeshInfo(arView: arView)
     }
 }
 
@@ -196,7 +208,7 @@ extension ARMainViewController: ARSessionDelegate {
     func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
         for anchor in anchors {
             if let objectAnchor = anchor as? ARObjectAnchor {
-                guard let objectName = objectAnchor.referenceObject.name, objectName == "ScanReferenceObj" else {
+                guard let objectName = objectAnchor.referenceObject.name, objectName == "InoFriends" else {
                     print("필터링: \(objectAnchor.referenceObject.name ?? "알 수 없음")는 처리되지 않습니다.")
                     continue
                 }
