@@ -309,7 +309,7 @@ final class ARMainViewModel {
         
         let wireframeMaterial = SCNMaterial()
         wireframeMaterial.fillMode = .fill
-        wireframeMaterial.diffuse.contents = UIColor.red
+        wireframeMaterial.diffuse.contents = UIColor.red.withAlphaComponent(0.3)
         boxGeometry.materials = [wireframeMaterial]
         
         let boxNode = SCNNode(geometry: boxGeometry)

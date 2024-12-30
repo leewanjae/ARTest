@@ -201,7 +201,7 @@ extension ARMainViewController: ARSessionDelegate, ARSCNViewDelegate {
     func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
         for anchor in anchors {
             if let objectAnchor = anchor as? ARObjectAnchor {
-                guard let objectName = objectAnchor.referenceObject.name, objectName == "InoFriendsTop" else {
+                guard let objectName = objectAnchor.referenceObject.name, objectName == "InoFriendsSmall" else {
                     print("필터링: \(objectAnchor.referenceObject.name ?? "알 수 없음")는 처리되지 않습니다.")
                     continue
                 }
